@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Wallpapers Showcase</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet" />
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+        }
+        .tab-content img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-6">
+    <div class="max-w-6xl mx-auto">
+        <h1 class="text-3xl font-bold mb-6 text-center">Wallpapers Showcase</h1>
+        <div class="flex justify-center mb-4">
+            <button id="mobileTab" class="tab-button px-4 py-2 bg-blue-600 text-white rounded-l hover:bg-blue-700 focus:outline-none">Wallpapers for Mobile</button>
+            <button id="desktopTab" class="tab-button px-4 py-2 bg-gray-300 text-gray-700 rounded-r hover:bg-gray-400 focus:outline-none">Wallpapers for Desktops</button>
+        </div>
+        <div class="text-center mb-6">
+            <button id="refreshBtn" class="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700 focus:outline-none">
+                <i class="fas fa-sync-alt"></i> Refresh Wallpapers
+            </button>
+        </div>
+        <div id="mobileContent" class="tab-content grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4"></div>
+        <div id="desktopContent" class="tab-content grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 hidden"></div>
+    </div>
+
+    <script>
+        const mobileTab = document.getElementById('mobileTab');
+        const desktopTab = document.getElementById('desktopTab');
+        const mobileContent = document.getElementById('mobileContent');
+        const desktopContent = document.getElementById('desktopContent');
+        const refreshBtn = document.getElementById('refreshBtn');
+
+        function setActiveTab(tab) {
+            if (tab === 'mobile') {
+                mobileTab.classList.add('bg-blue-600', 'text-white');
+                mobileTab.classList.remove('bg-gray-300', 'text-gray-700');
+                desktopTab.classList.add('bg-gray-300', 'text-gray-700');
+                desktopTab.classList.remove('bg-blue-600', 'text-white');
+                mobileContent.classList.remove('hidden');
+                desktopContent.classList.add('hidden');
+            } else {
+                desktopTab.classList.add('bg-blue-600', 'text-white');
+                desktopTab.classList.remove('bg-gray-300', 'text-gray-700');
+                mobileTab.classList.add('bg-gray-300', 'text-gray-700');
+                mobileTab.classList.remove('bg-blue-600', 'text-white');
+                desktopContent.classList.remove('hidden');
+                mobileContent.classList.add('hidden');
+            }
+        }
+
+        async function loadWallpapers(type) {
+            const response = await fetch(`/api/wallpapers/${type}`);
+            const files = await response.json();
+            const container = type === 'mobile' ? mobileContent : desktopContent;
+            container.innerHTML = '';
+            files.forEach(file => {
+                const anchor = document.createElement('a');
+                anchor.href = `/wallpapers/${type}/${file}`;
+                anchor.download = file;
+                const img = document.createElement('img');
+                img.src = `/wallpapers/${type}/${file}`;
+                img.alt = file;
+                img.className = "hover:scale-105 transition-transform duration-300 hover:shadow-lg";
+                anchor.appendChild(img);
+                container.appendChild(anchor);
+            });
+        }
+
+        mobileTab.addEventListener('click', () => {
+            setActiveTab('mobile');
+        });
+
+        desktopTab.addEventListener('click', () => {
+            setActiveTab('desktop');
+        });
+
+        refreshBtn.addEventListener('click', async () => {
+            refreshBtn.disabled = true;
+            refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Refreshing...';
+            const response = await fetch('/api/refresh', { method: 'POST' });
+            const result = await response.json();
+            if (result.status === 'refresh started') {
+                // Wait some time for the script to finish
+                setTimeout(() => {
+                    loadWallpapers('mobile');
+                    loadWallpapers('desktop');
+                    refreshBtn.disabled = false;
+                    refreshBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Refresh Wallpapers';
+                }, 10000); // 10 seconds delay
+            } else {
+                alert('Failed to refresh wallpapers');
+                refreshBtn.disabled = false;
+                refreshBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Refresh Wallpapers';
+            }
+        });
+
+        // Initial load
+        setActiveTab('mobile');
+        loadWallpapers('mobile');
+        loadWallpapers('desktop');
+    </script>
+</body>
